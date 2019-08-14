@@ -1,15 +1,14 @@
 import numpy as np
 
 #读取数据
-p = r'D:\software\tmp\SS300_200606_201907.csv'
+p = r'D:\software\tmp\Sheet1.csv'
 #D:\software\tmp\SS300_200606_201907.csv--D:\software\tmp\sz461_200906_201907.csv
 with open(p,encoding = 'ANSI') as f:
-    data = np.loadtxt(f,str,delimiter = ",", skiprows = 1,usecols = (1,2,3))
+    data = np.loadtxt(f,str,delimiter = ',', skiprows = 1,usecols = (1,2,3))
     #取唯一的代码值
     sk_name_list=np.unique(data[1:,[0]]).tolist()[1:]
 
-sk_peak_date=np.empty(shape=[0,3],dtype=str)
-sk_low_date=np.empty(shape=[0,3],dtype=str)
+sk_peak_date=[]
 sk_peak_date2=np.array([],dtype=str)
 sk_pairs=np.empty(shape=[0,2],dtype=str)
 sk_pair=[]
@@ -21,34 +20,46 @@ for sk_name in sk_name_list:
     #取日期
     sk_date_array=idx_array[:,1]
     #取价格
-    sk_close_array=idx_array[:,2].astype(np.float16)
+    print(sk_name)
+    sk_close_str_array=idx_array[:,2]
+    sk_close_array=sk_close_str_array.astype(np.float16)
     #转价格为列表
     sk_close_list=sk_close_array.tolist()
     #求列表差，正负号
     doublediff = np.diff(np.sign(np.diff(sk_close_list)))
     #求最大值(顶点)索引
-    peak_locations = np.where(doublediff == -2)[0] + 1
-    low_locations = np.where(doublediff == 2)[0] + 1
-    
-    if len(peak_locations)>2 :
-        peak_date_str=''
-        for i in range(1,len(peak_locations)-1):
-            peak_date_str=peak_date_str+'H'+sk_date_array[peak_locations[i]]+','
-        peak_date_array=np.array(peak_date_str.split(','))
-        sk_peak_date=np.append(sk_peak_date,[[peak_date_array]],axis=0)
-    if len(low_locations)>2 :
-        sk_low_date=np.append(sk_low_date,[[sk_name,'L',sk_date_array[low_locations]]],axis=0)
+    peak_locations1 = np.where(doublediff == -2)[0] + 1
+    low_locations1 = np.where(doublediff == 2)[0] + 1
+    #取顶极值点对应数据
+    sk_high_date_array2=sk_date_array[peak_locations1]
+    sk_high_close_array2=sk_close_array[peak_locations1]
+    sk_high_close_list2=sk_close_array[peak_locations1].astype(np.float16).tolist()
+    #求列表差，正负号
+    doublediff = np.diff(np.sign(np.diff(sk_high_close_list2)))
+    peak_locations2=np.where(doublediff == -2)[0] + 1
+    #取低极值点对应数据
+    sk_low_date_array2=sk_date_array[low_locations1]
+    sk_low_close_array2=sk_close_array[low_locations1]
+    sk_low_close_list2=sk_close_array[low_locations1].astype(np.float16).tolist()
+    #求列表差，正负号
+    doublediff = np.diff(np.sign(np.diff(sk_low_close_list2)))
+    low_locations2=np.where(doublediff == 2)[0] + 1
+        
+    if len(peak_locations2)>2 :
+        peak_date_str=sk_name+',H'+',H'.join(sk_high_date_array2[peak_locations2].tolist())
+        peak_date_str=peak_date_str+',L'+',L'.join(sk_low_date_array2[low_locations2].tolist())
+        sk_peak_date.append(peak_date_str)
 
 #循环比较，是否存在顶点时间相同占比0.7的两组数，列出
-for i in range(1,len(sk_peak_date)-1):
+for i in range(0,len(sk_peak_date)-1):
       for j in range(i+1,len(sk_peak_date)-1):#print(prev_one[1])
-          list1=sk_peak_date[i][2].tolist()
-          list2=sk_peak_date[j][2].tolist()
-          list1_name=sk_peak_date[i][0]
-          list2_name=sk_peak_date[j][0]
-          min_len=min(len(list1),len(list2))
+          list1=sk_peak_date[i].split(',')
+          list2=sk_peak_date[j].split(',')
+          list1_name=list1[0]
+          list2_name=list2[0]
+          min_len=min(len(list1),len(list2))-1
           inter_sect1=np.intersect1d(list1,list2)
-          if len(inter_sect1)>min_len*0.7:
+          if len(inter_sect1)>min_len*0.90 and min_len>6:
               result1=[]
               result1.append(list1_name)
               result1.append(list2_name)
