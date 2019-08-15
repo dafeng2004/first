@@ -1,7 +1,7 @@
 import numpy as np
 
 #读取数据
-p = r'D:\software\tmp\Sheet1.csv'
+p = r'D:\software\tmp\A_201805_201908.csv'
 #D:\software\tmp\SS300_200606_201907.csv--D:\software\tmp\sz461_200906_201907.csv
 with open(p,encoding = 'ANSI') as f:
     data = np.loadtxt(f,str,delimiter = ',', skiprows = 1,usecols = (1,2,3))
@@ -10,8 +10,9 @@ with open(p,encoding = 'ANSI') as f:
 
 sk_peak_date=[]
 sk_peak_date2=np.array([],dtype=str)
-sk_pairs=np.empty(shape=[0,2],dtype=str)
-sk_pair=[]
+sk_dup=np.array([],dtype=str)
+sk_dup2=np.array([],dtype=str)
+
 #循环计算各个代码
 for sk_name in sk_name_list:
     #print(sk_name+'\n')
@@ -20,7 +21,7 @@ for sk_name in sk_name_list:
     #取日期
     sk_date_array=idx_array[:,1]
     #取价格
-    print(sk_name)
+    #print(sk_name),查看进度
     sk_close_str_array=idx_array[:,2]
     sk_close_array=sk_close_str_array.astype(np.float16)
     #转价格为列表
@@ -59,13 +60,11 @@ for i in range(0,len(sk_peak_date)-1):
           list2_name=list2[0]
           min_len=min(len(list1),len(list2))-1
           inter_sect1=np.intersect1d(list1,list2)
-          if len(inter_sect1)>min_len*0.90 and min_len>6:
+          if len(inter_sect1)>min_len*0.90 and min_len>7:
               result1=[]
               result1.append(list1_name)
               result1.append(list2_name)
               result1.append(inter_sect1)
-              sk_pair=np.array([list1_name,list2_name])
-              sk_pairs=np.append(sk_pairs,sk_pair)
               sk_peak_date2=np.append(sk_peak_date2,np.array(result1),axis=0)
 print(sk_peak_date2)
 
@@ -73,6 +72,48 @@ file=open('d:/software/tmp/record1.csv','a')
 for one in range(0,int(sk_peak_date2.size/3)):
     tmp=sk_peak_date2[one*3+2].tolist()
     tmp=','.join(tmp)
-    tmp='H,'+sk_peak_date2[one*3]+','+sk_peak_date2[one*3+1]+','+tmp+'\n'
+    tmp='H_L,'+sk_peak_date2[one*3]+','+sk_peak_date2[one*3+1]+','+tmp+'\n'
     file.writelines(tmp)
+file.close()
+#把高低点日期相同的代码抽取出来
+dup_name_str=''
+sk_dup=[]
+for one in range(0,int(sk_peak_date2.size/3)):
+    tmp=sk_peak_date2[one*3+2].tolist()
+    dup_name_str=''
+    duplicate_idx=False
+    for two in range(one+1,int(sk_peak_date2.size/3)):
+        tmp2=sk_peak_date2[two*3+2].tolist()
+        if tmp==tmp2:
+            duplicate_idx=True
+            dup_name_str=dup_name_str+sk_peak_date2[one*3]+','+sk_peak_date2[one*3+1]+','+sk_peak_date2[two*3]+','+sk_peak_date2[two*3+1]+','
+    if duplicate_idx:
+        dup_name=list(set(dup_name_str[:-1].split(',')))
+        sk_dup=np.append(sk_dup,','.join(dup_name))
+#print(sk_dup)
+#排序、去重
+for i in sk_dup:
+    list1=i.split(',')
+    list1.sort()
+    sk_dup2=np.append(sk_dup2,','.join(list1))
+#去重－全等    
+sk_dup=[]
+for i in sk_dup2:
+    if not i in sk_dup:
+        sk_dup=np.append(sk_dup2,i)
+#去重－包含项，替换成'-'
+for i in range(0,sk_dup.size-1):
+    i_set=set(sk_dup[i].split(','))
+    for j in range(0,sk_dup.size):
+        j_set=set(sk_dup[j].split(','))
+        if i_set.issubset(j_set) and i!=j:
+            sk_dup[i]='-'
+            break
+#去除重复项
+sk_dup2=sk_dup[np.where(sk_dup!='-')]
+print(sk_dup2)
+#写盘
+file=open('d:/software/tmp/record1.csv','a')
+for one in sk_dup2:
+    file.writelines(one+'\n')
 file.close()
