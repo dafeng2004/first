@@ -64,14 +64,13 @@ for i in range(0,len(sk_peak_date)-1):
               result1=[]
               result1.append(list1_name)
               result1.append(list2_name)
-              result1.append(inter_sect1)
+              result1.append(','.join(inter_sect1.tolist()))
               sk_peak_date2=np.append(sk_peak_date2,np.array(result1),axis=0)
 print(sk_peak_date2)
 
 file=open('d:/software/tmp/record1.csv','a')
 for one in range(0,int(sk_peak_date2.size/3)):
-    tmp=sk_peak_date2[one*3+2].tolist()
-    tmp=','.join(tmp)
+    tmp=sk_peak_date2[one*3+2]
     tmp='H_L,'+sk_peak_date2[one*3]+','+sk_peak_date2[one*3+1]+','+tmp+'\n'
     file.writelines(tmp)
 file.close()
@@ -79,17 +78,19 @@ file.close()
 dup_name_str=''
 sk_dup=[]
 for one in range(0,int(sk_peak_date2.size/3)):
-    tmp=sk_peak_date2[one*3+2].tolist()
+    tmp=sk_peak_date2[one*3+2].split(',')
     dup_name_str=''
     duplicate_idx=False
     for two in range(one+1,int(sk_peak_date2.size/3)):
-        tmp2=sk_peak_date2[two*3+2].tolist()
+        tmp2=sk_peak_date2[two*3+2].split(',')
         if tmp==tmp2:
             duplicate_idx=True
             dup_name_str=dup_name_str+sk_peak_date2[one*3]+','+sk_peak_date2[one*3+1]+','+sk_peak_date2[two*3]+','+sk_peak_date2[two*3+1]+','
     if duplicate_idx:
         dup_name=list(set(dup_name_str[:-1].split(',')))
         sk_dup=np.append(sk_dup,','.join(dup_name))
+    else:
+        sk_dup=np.append(sk_dup,(sk_peak_date2[one*3]+','+sk_peak_date2[one*3+1]))
 #print(sk_dup)
 #排序、去重
 for i in sk_dup:
